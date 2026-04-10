@@ -55,10 +55,11 @@ void setup() {
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
+  Serial.println("LCD found");
 
-  // Clear the LCD buffer
+  //set up init display on LCD
   display.clearDisplay();
-  start_menu();    // Draw circles (filled)
+  start_menu();    
   delay(20);
 
 }
