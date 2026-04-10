@@ -1,5 +1,9 @@
 The main .ino file requires you setup the arduino IDE correctly and download the proper libraries
 
+Open Board Manager (left side bar):
+  - type esp32
+      - download both Arduino ESP32 and esp32 (espressif)
+
 Arduino IDE Settings:
   - board: ESP32S3 Dev Module
   - port: your local USB port (should show up as ESP32 Family Device)
