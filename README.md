@@ -8,8 +8,8 @@ Arduino IDE Settings:
     
 Open Library Manager:
   - Type SHT31
-      download adafruit SHT31 library 
+      - download adafruit SHT31 library 
   - Type VELM7700
-      download adafruit VEML7700 library 
+      - download adafruit VEML7700 library 
   - Type SSD1306
-      download adafruit SSD1306 library
+      - download adafruit SSD1306 library
