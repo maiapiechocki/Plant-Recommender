@@ -17,3 +17,9 @@ Open Library Manager:
       - download adafruit VEML7700 library 
   - Type SSD1306
       - download adafruit SSD1306 library
+  - Download Arduinojson by Benoit
+
+database_connect Notes:
+
+  - Download Arduinojson by Benoit in library manager
+  - Make sure to change the ssid char to your wifi name, and password char to your wifi password. Hotspot works best
