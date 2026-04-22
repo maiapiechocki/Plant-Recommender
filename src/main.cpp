@@ -2,17 +2,25 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+#define LED_PIN1 6;
+#define LED_PIN2 7;
+#define LED_PIN3 8;
+
+
 // Pin definitions - using raw GPIO numbers
-const int btn1 = 7;   // GPIO7 top
-const int btn2 = 8;   // GPIO8 bottom
-const int selectbtn = 10;    // GPIO9 (green button with LED)
+const int btn1 = 10;   // GPIO7 top
+const int btn2 = 17;   // GPIO8 bottom
+const int selectbtn = 18;    // GPIO9 (green button with LED)
+const int selectLED = 21;
+const int ledRed = 7;
+const int ledGreen = 6;
+
 
 #define SCREEN_WIDTH   128
 #define SCREEN_HEIGHT   64
 #define OLED_RESET      38
 #define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
 
 void setup() {
   Serial.begin(115200);
@@ -21,6 +29,12 @@ void setup() {
   pinMode(btn1, INPUT_PULLUP);
   pinMode(btn2, INPUT_PULLUP);
   pinMode(selectbtn, INPUT_PULLUP);
+
+  pinMode(ledRed, OUTPUT);
+  pinMode(ledGreen, OUTPUT);
+  pinMode(selectLED, OUTPUT);
+
+
 
   Wire.begin(11, 12);
   
