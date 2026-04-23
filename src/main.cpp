@@ -559,14 +559,17 @@ lightScore = constrain(lightScore, 0, 100);
   int idx = topPlants[0];
 
   uploadTopPlant(
-    plants[idx].id,       
+    plants[idx].id,
     topScores[0],
-    "Location"      
+    "Location",
+    currentReading.temp_c,
+    currentReading.humidity,
+    currentReading.lux
   );
 }
 }
 
-void uploadTopPlant(String plantId, int score, String location) {
+void uploadTopPlant(String plantId, int score, String location, float temp, float humidity, float light) {
   WiFiClientSecure client;
   client.setInsecure();
 
@@ -576,17 +579,28 @@ void uploadTopPlant(String plantId, int score, String location) {
   http.addHeader("Content-Type", "application/json");
   http.addHeader("apikey", anonKey);
   http.addHeader("Authorization", String("Bearer ") + anonKey);
+  http.addHeader("Prefer", "return=minimal"); // optional but cleaner
 
   String body = "{";
   body += "\"plant_id\":\"" + plantId + "\",";
   body += "\"location\":\"" + location + "\",";
-  body += "\"score\":" + String(score);
+  body += "\"score\":" + String(score) + ",";
+  body += "\"temperature\":" + String(temp, 1) + ",";
+  body += "\"humidity\":" + String(humidity, 1) + ",";
+  body += "\"light\":" + String(light, 1);
   body += "}";
 
   int code = http.POST(body);
 
   Serial.print("Upload response: ");
   Serial.println(code);
+
+  if (code > 0) {
+    String response = http.getString();
+    Serial.println(response); // helps debugging
+  } else {
+    Serial.println("Request failed");
+  }
 
   http.end();
 }
@@ -648,6 +662,7 @@ void collectAndProcessData() {
   if (valid_samples > 0) {
     float avg_temp_c = temp_sum / valid_samples;
     currentReading.temp_f = celsiusToFahrenheit(avg_temp_c);
+    currentReading.temp_c = avg_temp_c;
     currentReading.humidity = humidity_sum / valid_samples;
     currentReading.lux = lux_sum / valid_samples;
     currentReading.sunlight = categorizeSunlight(currentReading.lux);

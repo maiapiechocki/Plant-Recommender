@@ -82,6 +82,7 @@ struct Plant {
 };
 
 struct SensorData {
+  float temp_c;
   float temp_f;
   float humidity;
   float lux;
@@ -101,7 +102,7 @@ extern SensorData currentReading;
 void start_menu(void);
 void fetchPlants(void);
 void collectAndProcessData(void);
-void uploadTopPlant(String plantId, int score, String location);
+void uploadTopPlant(String plantId, int score, String location, float temp, float humidity, float light);
 void matchPlants(void);
 void displayRecommendations(void);
 float celsiusToFahrenheit(float c);
