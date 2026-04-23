@@ -2,19 +2,13 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define LED_PIN1 6;
-#define LED_PIN2 7;
-#define LED_PIN3 8;
-
-
-// Pin definitions - using raw GPIO numbers
-const int btn1 = 10;   // GPIO7 top
-const int btn2 = 17;   // GPIO8 bottom
-const int selectbtn = 18;    // GPIO9 (green button with LED)
+const int btn1 = 10;  
+const int btn2 = 17;   
+const int selectbtn = 18;   
 const int selectLED = 21;
-const int ledRed = 7;
-const int ledGreen = 6;
-
+const int LEDR = 8;
+const int LEDG = 7;
+const int LEDB = 6;
 
 #define SCREEN_WIDTH   128
 #define SCREEN_HEIGHT   64
@@ -22,19 +16,27 @@ const int ledGreen = 6;
 #define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+
+byte lastSelectButtonState = HIGH;
+byte redLEDState = HIGH;
+byte greenLEDState = HIGH;
+byte blueLEDState = HIGH;
+byte selectLEDState = HIGH;
+
+
 void setup() {
   Serial.begin(115200);
   
-  //active LOW 
+  //active LOW inputs with internal pull-ups
   pinMode(btn1, INPUT_PULLUP);
   pinMode(btn2, INPUT_PULLUP);
   pinMode(selectbtn, INPUT_PULLUP);
 
-  pinMode(ledRed, OUTPUT);
-  pinMode(ledGreen, OUTPUT);
+  //declare outputs for LEDs
+  pinMode(LEDR, OUTPUT);
+  pinMode(LEDG, OUTPUT);
+  pinMode(LEDB, OUTPUT);
   pinMode(selectLED, OUTPUT);
-
-
 
   Wire.begin(11, 12);
   
@@ -48,14 +50,36 @@ void setup() {
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0);
+
 }
+
 
 void loop() {
   
+  // toggle LEDs based on button states - active LOW 
+  byte selectState = digitalRead(selectbtn);
+  if(selectState != lastSelectButtonState) {
+    lastSelectButtonState = selectState;
+
+    if(selectState == LOW) {
+      blueLEDState = LOW;
+      greenLEDState = HIGH;
+      selectLEDState = HIGH;
+    } else {
+      blueLEDState = HIGH;
+      greenLEDState = LOW;
+      selectLEDState = LOW;
+    }
+
+  }
+
+  digitalWrite(LEDG, greenLEDState);
+  digitalWrite(LEDB, blueLEDState);
+  digitalWrite(selectLED, selectLEDState);
+
   // 1. read input for each button
   int btn1State = digitalRead(btn1);
   int btn2State = digitalRead(btn2);
-  int selectState = digitalRead(selectbtn);
 
   // 2. Prepare the display
   display.clearDisplay();
