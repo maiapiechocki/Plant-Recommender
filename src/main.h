@@ -11,7 +11,6 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-
 /*
 INIT – Powers on, initializes sensors, GPS, and Bluetooth
 MENU – User sets filters and starts scan
@@ -72,6 +71,7 @@ extern byte selectLEDState;
 
 
 struct Plant {
+  String id; 
   String name;
   int min_temp;
   int max_temp;
@@ -101,10 +101,14 @@ extern SensorData currentReading;
 void start_menu(void);
 void fetchPlants(void);
 void collectAndProcessData(void);
+void uploadTopPlant(String plantId, int score, String location);
 void matchPlants(void);
 void displayRecommendations(void);
 float celsiusToFahrenheit(float c);
 String categorizeSunlight(float lux);
+String mapSunlightToCategory(String sunlight);
+int lightLevel(String s);
+
 
 void setLED(const char* color); // red, green, blue, off
 void collectAndProcessData();

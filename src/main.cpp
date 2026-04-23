@@ -1,9 +1,9 @@
 #include "main.h"
 
-const char* ssid = "USC Guest Wireless";
-const char* password = "";
+const char* ssid = "ErinYuen";
+const char* password = "erinyuen";
 
-const char* url = "https://nxvpnuvxrcjaeikjznxt.supabase.co/rest/v1/plants?select=name,min_temp,max_temp,min_humidity,max_humidity,sunlight";
+const char* url = "https://nxvpnuvxrcjaeikjznxt.supabase.co/rest/v1/plants?select=id,name,min_temp,max_temp,min_humidity,max_humidity,sunlight";
 const char* anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dnBudXZ4cmNqYWVpa2p6bnh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MTcxMDIsImV4cCI6MjA4NzI5MzEwMn0.qGHLAlnQcnSvdgpGIJZeHbFO9smyhPqsA7psFe9ZNGc";
 
 const int btn1 = 10;
@@ -129,11 +129,21 @@ void handleInit() {
   Serial.print("SHT31: ");
   Serial.println(sht31Available ? "OK" : "NOT FOUND");
 
-  // Load mock plant data
-  loadMockPlants();
+  // Connect to WiFi
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+Serial.println("\nWiFi connected!");
+  // Load plant data from API
+  fetchPlants();
 
   if (plantCount == 0) {
-    Serial.println("ERROR: Failed to load mock plants!");
+    Serial.println("ERROR: Failed to load plants!");
     currState = ERROR;
     return;
   }
@@ -413,6 +423,14 @@ void loadMockPlants() {
   Serial.println(" mock plants");
 }
 
+
+int lightLevel(String s) {
+  if (s == "low") return 0;
+  if (s == "medium") return 1;
+  if (s == "high") return 2;
+  return 1;
+}
+
 void matchPlants() {
   Serial.println("Matching plants\n");
   
@@ -421,44 +439,92 @@ void matchPlants() {
   }
 
   for (int i = 0; i < plantCount; i++) {
-    int score = 100;
 
-    if (currentReading.temp_f < plants[i].min_temp) {
-      score -= abs(currentReading.temp_f - plants[i].min_temp) * 2;
-    } else if (currentReading.temp_f > plants[i].max_temp) {
-      score -= abs(currentReading.temp_f - plants[i].max_temp) * 2;
-    }
+  // --- TEMPERATURE SCORE ---
+  float temp = currentReading.temp_f;
+  float minT = plants[i].min_temp;
+  float maxT = plants[i].max_temp;
+  float midT = (minT + maxT) / 2.0;
 
-    if (currentReading.humidity < plants[i].min_humidity) {
-      score -= abs(currentReading.humidity - plants[i].min_humidity);
-    } else if (currentReading.humidity > plants[i].max_humidity) {
-      score -= abs(currentReading.humidity - plants[i].max_humidity);
-    }
+  int tempScore;
 
-    String plantSunlight = plants[i].sunlight;
-    plantSunlight.toLowerCase();
-    
-    String plantCategory = "medium";
-    if (plantSunlight.indexOf("full") >= 0 || plantSunlight.indexOf("bright direct") >= 0) {
-      plantCategory = "high";
-    } else if (plantSunlight.indexOf("low") >= 0 || plantSunlight.indexOf("indirect") >= 0) {
-      plantCategory = "low";
-    } else if (plantSunlight.indexOf("bright") >= 0) {
-      plantCategory = "medium";
-    }
-    
-    if (currentReading.sunlight != plantCategory) {
-      score -= 30;
-    }
+  if (temp >= minT && temp <= maxT) {
+    // inside range → reward closeness to center
+    float dist = abs(temp - midT);
+    float maxDist = (maxT - minT) / 2.0;
+    tempScore = 100 - (dist / maxDist) * 30; // only small penalty
+  } else {
+    // outside range → heavy penalty
+    float dist;
+    if (temp < minT) dist = minT - temp;
+    else dist = temp - maxT;
 
-    if (score < 0) score = 0;
-    plants[i].score = score;
-
-    Serial.print(plants[i].name);
-    Serial.print(": ");
-    Serial.println(score);
+    tempScore = 70 - dist * 3; // harsher drop
   }
 
+  tempScore = constrain(tempScore, 0, 100);
+
+  // --- HUMIDITY SCORE ---
+  float hum = currentReading.humidity;
+  float minH = plants[i].min_humidity;
+  float maxH = plants[i].max_humidity;
+  float midH = (minH + maxH) / 2.0;
+
+  int humScore;
+
+  if (hum >= minH && hum <= maxH) {
+    float dist = abs(hum - midH);
+    float maxDist = (maxH - minH) / 2.0;
+    humScore = 100 - (dist / maxDist) * 30;
+  } else {
+    float dist;
+    if (hum < minH) dist = minH - hum;
+    else dist = hum - maxH;
+
+    humScore = 70 - dist * 2;
+  }
+
+  humScore = constrain(humScore, 0, 100);
+
+  // --- SUNLIGHT SCORE ---
+  int lightScore;
+
+  // Map plant sunlight → level (1–3)
+  String plantSunlight = plants[i].sunlight;
+  plantSunlight.toLowerCase();
+
+int plantLevel;
+
+if (plantSunlight.indexOf("full") >= 0) plantLevel = 3;
+else if (plantSunlight.indexOf("bright") >= 0) plantLevel = 2;
+else if (plantSunlight.indexOf("indirect") >= 0) plantLevel = 1;
+else plantLevel = 0; // low fallback
+
+int currentLevel;
+
+if (currentReading.lux < 500) currentLevel = 0;        // low
+else if (currentReading.lux < 2000) currentLevel = 1;  // indirect
+else if (currentReading.lux < 10000) currentLevel = 2; // bright indirect
+else currentLevel = 3; // full
+
+int diff = abs(currentLevel - plantLevel);
+
+// smoother curve
+lightScore = 100 - (diff * 30);
+lightScore = constrain(lightScore, 0, 100);
+
+  // --- FINAL WEIGHTED SCORE ---
+  int finalScore =
+    (tempScore * 0.4) +
+    (humScore * 0.3) +
+    (lightScore * 0.3);
+
+  plants[i].score = finalScore;
+
+  Serial.print(plants[i].name);
+  Serial.print(": ");
+  Serial.println(finalScore);
+}
   for (int i = 0; i < 3; i++) {
     topPlants[i] = -1;
     topScores[i] = 0;
@@ -489,6 +555,40 @@ void matchPlants() {
       Serial.println(")");
     }
   }
+  if (topPlants[0] != -1) {
+  int idx = topPlants[0];
+
+  uploadTopPlant(
+    plants[idx].id,       
+    topScores[0],
+    "Location"      
+  );
+}
+}
+
+void uploadTopPlant(String plantId, int score, String location) {
+  WiFiClientSecure client;
+  client.setInsecure();
+
+  HTTPClient http;
+  http.begin(client, "https://nxvpnuvxrcjaeikjznxt.supabase.co/rest/v1/recommendations");
+
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("apikey", anonKey);
+  http.addHeader("Authorization", String("Bearer ") + anonKey);
+
+  String body = "{";
+  body += "\"plant_id\":\"" + plantId + "\",";
+  body += "\"location\":\"" + location + "\",";
+  body += "\"score\":" + String(score);
+  body += "}";
+
+  int code = http.POST(body);
+
+  Serial.print("Upload response: ");
+  Serial.println(code);
+
+  http.end();
 }
 
 void collectAndProcessData() {
@@ -581,24 +681,29 @@ void displayRecommendations() {
   for (int i = 0; i < 3; i++) {
     if (topPlants[i] != -1) {
       int plantIdx = topPlants[i];
+      
       display.print(i + 1);
       display.print(". ");
-      display.println(plants[plantIdx].name);
+      display.print(plants[plantIdx].name);
+      display.print(" (");
+      display.print(topScores[i]);
+      display.println(")");
     }
   }
   
   display.display();
 }
-
 float celsiusToFahrenheit(float c) {
   return (c * 9.0 / 5.0) + 32.0;
 }
 
 String categorizeSunlight(float lux) {
   if (lux < 500) return "low";
-  else if (lux < 2000) return "medium";
-  else return "high";
+  else if (lux < 2000) return "indirect";
+  else if (lux < 10000) return "bright indirect";
+  else return "full";
 }
+
 
 void setLED(const char* color) {
   digitalWrite(LEDR, LOW);
@@ -667,9 +772,10 @@ void fetchPlants() {
       JsonArray arr = doc.as<JsonArray>();
       for (JsonObject obj : arr) {
         if (plantCount < 20) {
+          plants[plantCount].id = obj["id"] | "";
           plants[plantCount].name = obj["name"] | "";
-          plants[plantCount].min_temp = obj["min_temp"] | 0;
-          plants[plantCount].max_temp = obj["max_temp"] | 0;
+          plants[plantCount].min_temp = (obj["min_temp"] | 0) * 9.0 / 5.0 + 32;
+          plants[plantCount].max_temp = (obj["max_temp"] | 0) * 9.0 / 5.0 + 32;
           plants[plantCount].min_humidity = obj["min_humidity"] | 0;
           plants[plantCount].max_humidity = obj["max_humidity"] | 0;
           plants[plantCount].sunlight = obj["sunlight"] | "";
