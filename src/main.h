@@ -107,7 +107,6 @@ float celsiusToFahrenheit(float c);
 String categorizeSunlight(float lux);
 
 void setLED(const char* color); // red, green, blue, off
-void scanI2C();
 void collectAndProcessData();
 void setSelectLED(bool state);
 void loadMockPlants(); 
