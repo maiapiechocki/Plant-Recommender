@@ -1,7 +1,7 @@
 #include "main.h"
 
-const char* ssid = "ErinYuen";
-const char* password = "erinyuen";
+const char* ssid = "Izzy";
+const char* password = "isabella";
 
 const char* url = "https://nxvpnuvxrcjaeikjznxt.supabase.co/rest/v1/plants?select=id,name,min_temp,max_temp,min_humidity,max_humidity,sunlight";
 const char* anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dnBudXZ4cmNqYWVpa2p6bnh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MTcxMDIsImV4cCI6MjA4NzI5MzEwMn0.qGHLAlnQcnSvdgpGIJZeHbFO9smyhPqsA7psFe9ZNGc";
@@ -172,10 +172,14 @@ void handleMenu() {
   display.clearDisplay();
   display.setTextSize(1);
   display.setCursor(0, 0);
-  display.println("---- MENU ----");
+  display.println("      ~~ MENU ~~");
+  display.println("Press SELECT to Start");
+  display.drawBitmap((display.width() - FLOWER_WIDTH ) / 2,
+    (display.height() - FLOWER_HEIGHT) / 2,
+    flower_btmp, 24, 24, 1);
   display.println("");
-  display.println("Press SELECT to");
-  display.println("start scan");
+  display.println("");
+  display.println("");
   display.println("");
   display.println("BTN1: Settings");
   display.println("BTN2: Info");
@@ -194,7 +198,7 @@ void handleMenu() {
 
 void handleSample() {
   Serial.println("\n STATE: SAMPLE ");
-  setLED("blue");
+  setLED("red");
   
   collectAndProcessData();
   
@@ -203,12 +207,12 @@ void handleSample() {
 
 void handleProcess() {
   Serial.println("\n STATE: PROCESS ");
-  setLED("blue");
+  setLED("red");
   
   display.clearDisplay();
-  display.setCursor(0, 0);
-  display.println("Processing");
-  display.display();
+  // display.setCursor(0, 0);
+  // display.println("Processing");
+  // display.display();
   
   matchPlants();
   
@@ -606,13 +610,16 @@ void uploadTopPlant(String plantId, int score, String location, float temp, floa
 }
 
 void collectAndProcessData() {
-  const int NUM_SAMPLES = 5;
+  const int NUM_SAMPLES = 8;
   float temp_sum = 0;
   float humidity_sum = 0;
   float lux_sum = 0;
   int valid_samples = 0;
+  int tile_num = 1;
+  int cursor_pixel = 0;
 
   Serial.println("\nCollecting samples");
+  display.clearDisplay();
 
   for (int i = 0; i < NUM_SAMPLES; i++) {
     float t, h, l;
@@ -637,25 +644,29 @@ void collectAndProcessData() {
       lux_sum += l;
       valid_samples++;
 
-      display.clearDisplay();
-      display.setTextSize(1);
-      display.setCursor(0, 0);
-      display.println("Sampling");
-      display.print("Sample: ");
-      display.print(i + 1);
-      display.print("/");
-      display.println(NUM_SAMPLES);
-      display.print("Temp: ");
-      display.print(t, 1);
-      display.println("C");
-      display.print("Hum: ");
-      display.print(h, 1);
-      display.println("%");
-      display.print("Lux: ");
-      display.println((int)l);
-      display.display();
-    }
+    //display loading screen
+    if(tile_num == 1){
+      display.drawBitmap(0,
+        cursor_pixel,
+        tile_1, TILE_WIDTH, TILE_HEIGHT, 1);
 
+        tile_num = 2;
+    }
+    else{
+      display.drawBitmap(0,
+        cursor_pixel,
+        tile_2, TILE_WIDTH, TILE_HEIGHT, 1);
+
+        tile_num = 1;
+    }
+    cursor_pixel += 16;
+    display.display();
+
+      if(cursor_pixel == 64){
+        display.clearDisplay();
+        cursor_pixel = 0;
+      }
+    }
     delay(1000);
   }
 
