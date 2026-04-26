@@ -13,6 +13,7 @@ const int selectLED = 21;
 const int LEDR = 8;
 const int LEDG = 7;
 const int LEDB = 6;
+const int RST = 9;
 
 State currState = INIT;
 State prevState = INIT;
@@ -50,6 +51,8 @@ void setup() {
   pinMode(LEDG, OUTPUT);
   pinMode(LEDB, OUTPUT);
   pinMode(selectLED, OUTPUT);
+  pinMode(RST, OUTPUT);
+  digitalWrite(RST, HIGH);
 
   setLED("green");  
   setSelectLED(true);
@@ -181,8 +184,8 @@ void handleMenu() {
   display.println("");
   display.println("");
   display.println("");
-  display.println("BTN1: Settings");
-  display.println("BTN2: Info");
+  // display.println("BTN1: Settings");
+  // display.println("BTN2: Info");
   display.display();
 
   while (currState == MENU) {
@@ -627,16 +630,18 @@ void collectAndProcessData() {
     if (sht31Available) {
       t = sht31.readTemperature();
       h = sht31.readHumidity();
-    } else {
-      t = 22.0 + random(-2, 3);
-      h = 45.0 + random(-5, 6);
-    }
+    } 
+    // else {
+    //   t = 22.0 + random(-2, 3);
+    //   h = 45.0 + random(-5, 6);
+    // }
 
     if (vemlAvailable) {
       l = veml.readLux();
-    } else {
-      l = 500 + random(-100, 101);
-    }
+    } 
+    // else {
+    //   l = 500 + random(-100, 101);
+    // }
 
     if (!isnan(t) && !isnan(h)) {
       temp_sum += t;
@@ -677,6 +682,15 @@ void collectAndProcessData() {
     currentReading.humidity = humidity_sum / valid_samples;
     currentReading.lux = lux_sum / valid_samples;
     currentReading.sunlight = categorizeSunlight(currentReading.lux);
+
+    if(currentReading.lux == 0 || currentReading.temp_c == 0){
+      display.clearDisplay();
+      display.println("An Issue Occurred: ");
+      display.println("Restarting...");
+      display.display();
+      delay(500);
+      digitalWrite(RST, LOW);
+    }
 
     Serial.println("\nAverages:");
     Serial.print("Temp: ");
