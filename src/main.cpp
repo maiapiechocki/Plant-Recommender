@@ -1,7 +1,7 @@
 #include "main.h"
 
-const char* ssid = "Izzy";
-const char* password = "isabella";
+const char* ssid = "USC Guest Wireless";
+const char* password = "";
 
 const char* url = "https://nxvpnuvxrcjaeikjznxt.supabase.co/rest/v1/plants?select=id,name,min_temp,max_temp,min_humidity,max_humidity,sunlight";
 const char* anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dnBudXZ4cmNqYWVpa2p6bnh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MTcxMDIsImV4cCI6MjA4NzI5MzEwMn0.qGHLAlnQcnSvdgpGIJZeHbFO9smyhPqsA7psFe9ZNGc";
@@ -88,6 +88,9 @@ void loop() {
     case IDLE:
       handleIdle();
       break;
+    case READINGS:
+      handleReadings();
+      break;
     case ERROR:
       handleError();
       break;
@@ -103,7 +106,7 @@ void handleInit() {
   Wire.begin(11, 12);
   delay(100);
 
-  // Initialize display (simple, no retry)
+  // Initialize display
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println("Display init failed");
   } else {
@@ -142,7 +145,7 @@ void handleInit() {
   }
 
 Serial.println("\nWiFi connected!");
-  // Load plant data from API
+ 
   fetchPlants();
 
   if (plantCount == 0) {
@@ -184,8 +187,6 @@ void handleMenu() {
   display.println("");
   display.println("");
   display.println("");
-  // display.println("BTN1: Settings");
-  // display.println("BTN2: Info");
   display.display();
 
   while (currState == MENU) {
@@ -213,9 +214,6 @@ void handleProcess() {
   setLED("red");
   
   display.clearDisplay();
-  // display.setCursor(0, 0);
-  // display.println("Processing");
-  // display.display();
   
   matchPlants();
   
@@ -229,31 +227,39 @@ void handleRecDisplay() {
   displayRecommendations();
   
   display.println("");
-  display.println("SELECT: Details");
-  display.println("BTN1: New Scan");
+  display.println("BTN1: Details");
+  display.println("SELECT: New Scan");
+  display.println("BTN2: Sensor Readings");
   display.display();
 
   while (currState == REC_DISPLAY) {
-    if (selectPressed()) {
-      Serial.println("SELECT pressed - showing details");
+    if (btn1Pressed()) {
+      Serial.println("BTN1 pressed - showing details");
       delay(50);
       selectedPlantIndex = 0;
       currState = DETAIL;
       break;
     }
-    if (btn1Pressed()) {
-      Serial.println("BTN1 pressed - new scan");
+    if (selectPressed()) {
+      Serial.println("SELECT pressed - new scan");
       delay(50);
       currState = MENU;
       break;
     }
+    if (btn2Pressed()) {
+      Serial.println("BTN2 pressed - showing sensor readings");
+      delay(50);
+      currState = READINGS;
+      break;  
+    }
+
     delay(100);
   }
 }
 
 void handleDetail() {
   Serial.println("\n STATE: DETAIL ");
-  setLED("green");
+  setLED("blue");
   
   if (topPlants[selectedPlantIndex] == -1) {
     Serial.println("No plant at this index, returning to display");
@@ -350,6 +356,46 @@ void handleIdle() {
   
   delay(1000);
 }
+
+void handleReadings() {
+
+  currState = READINGS;
+  Serial.println("\n STATE: READINGS ");
+  setLED("blue");
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println("Sensor Readings:");
+  display.println("");
+  display.print("Temp: ");
+  display.print(currentReading.temp_f);
+  display.println(" F");
+  
+  display.print("Humidity: ");
+  display.print(currentReading.humidity);
+  display.println(" %");
+  
+  display.print("Light: ");
+  display.print(currentReading.lux);
+  display.println(" lux");
+  
+  display.println("");
+  display.println("Press SELECT to go back");
+  display.display();
+
+  while (currState == READINGS) {
+    if (selectPressed()) {
+      Serial.println("SELECT pressed - going back");
+      delay(50);
+      currState = REC_DISPLAY;
+      break;
+    }
+    delay(100);
+  }
+
+
+}
+
 
 void handleError() {
   Serial.println("\n STATE: ERROR ");
@@ -456,12 +502,12 @@ void matchPlants() {
   int tempScore;
 
   if (temp >= minT && temp <= maxT) {
-    // inside range → reward closeness to center
+    // inside range -> reward closeness to center
     float dist = abs(temp - midT);
     float maxDist = (maxT - minT) / 2.0;
     tempScore = 100 - (dist / maxDist) * 30; // only small penalty
   } else {
-    // outside range → heavy penalty
+    // outside range -> heavy penalty
     float dist;
     if (temp < minT) dist = minT - temp;
     else dist = temp - maxT;
@@ -716,8 +762,7 @@ void displayRecommendations() {
   display.setCursor(0, 0);
   
   display.println("Top Plants:");
-  display.println("");
-  
+
   for (int i = 0; i < 3; i++) {
     if (topPlants[i] != -1) {
       int plantIdx = topPlants[i];
