@@ -14,11 +14,11 @@
 /*
 INIT – Powers on, initializes sensors, GPS, and Bluetooth
 MENU – User sets filters and starts scan
+INFO - Displays how-to guide to user 
 SAMPLE – Collects and averages sensor data over 30s
 PROCESS – Runs matching algorithm and scores plants
 DISPLAY – Shows ranked plant recommendations
 DETAIL – Shows care info and specs for selected plant
-SYNC – Transfers results to mobile app via Bluetooth
 IDLE – Deep sleep; awaits user input or times out from MENU
 READINGS - Displays avg sensor readings from SAMPLE state
 ERROR – Handles sensor failure, GPS timeout, or Bluetooth loss; returns to MENU
@@ -26,14 +26,14 @@ ERROR – Handles sensor failure, GPS timeout, or Bluetooth loss; returns to MEN
 enum State {
     INIT, 
     MENU,
+    INFO,
     SAMPLE,
     PROCESS,   
     REC_DISPLAY,
     DETAIL,
-    SYNC,
     IDLE,
     READINGS,
-    ERROR
+    ERROR,
 };
 
 extern State currState;
@@ -129,10 +129,10 @@ void handleSample();
 void handleProcess();
 void handleRecDisplay();
 void handleDetail();
-void handleSync();
 void handleIdle();
 void handleReadings();
 void handleError();
+void handleInfo();
 
 bool btn1Pressed();
 bool btn2Pressed();

@@ -1,7 +1,7 @@
 #include "main.h"
 
-const char* ssid = "USC Guest Wireless";
-const char* password = "";
+const char* ssid = "ErinYuen";
+const char* password = "erinyuen";
 
 const char* url = "https://nxvpnuvxrcjaeikjznxt.supabase.co/rest/v1/plants?select=id,name,min_temp,max_temp,min_humidity,max_humidity,sunlight";
 const char* anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dnBudXZ4cmNqYWVpa2p6bnh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MTcxMDIsImV4cCI6MjA4NzI5MzEwMn0.qGHLAlnQcnSvdgpGIJZeHbFO9smyhPqsA7psFe9ZNGc";
@@ -70,6 +70,9 @@ void loop() {
     case MENU:
       handleMenu();
       break;
+    case INFO:
+      handleInfo();
+      break;
     case SAMPLE:
       handleSample();
       break;
@@ -81,9 +84,6 @@ void loop() {
       break;
     case DETAIL:
       handleDetail();
-      break;
-    case SYNC:
-      handleSync();
       break;
     case IDLE:
       handleIdle();
@@ -179,7 +179,7 @@ void handleMenu() {
   display.setTextSize(1);
   display.setCursor(0, 0);
   display.println("      ~~ MENU ~~");
-  display.println("Press SELECT to Start");
+  
   display.drawBitmap((display.width() - FLOWER_WIDTH ) / 2,
     (display.height() - FLOWER_HEIGHT) / 2,
     flower_btmp, 24, 24, 1);
@@ -187,6 +187,9 @@ void handleMenu() {
   display.println("");
   display.println("");
   display.println("");
+  display.println("");
+  display.println("Press SELECT To Start");
+  display.println("Press BTN1 For Info");
   display.display();
 
   while (currState == MENU) {
@@ -196,7 +199,38 @@ void handleMenu() {
       currState = SAMPLE;
       break;
     }
+    if(btn1Pressed()) {
+      Serial.println("Btn1 pressed - showing info");
+      delay(50);
+      currState = INFO;
+      break;
+    }
     delay(100);
+  }
+}
+void handleInfo(){
+  Serial.println("STATE: INFO");
+  setLED("blue");
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.println("1. Turn off lights");
+  display.println("2. Place in desired");
+  display.println("   location");
+  display.println("3. Press green SELECT");
+  display.println("   button");
+  display.println("4. Become a plant");
+  display.println("   owner!");
+  display.println("<-- Go back (BTN2)");
+  display.display();
+
+  while(currState == INFO){
+    if(btn2Pressed()){
+      Serial.println("BTN2 pressed - going back to main menu");
+      currState = MENU;
+      break;
+    }
   }
 }
 
@@ -327,20 +361,6 @@ void handleDetail() {
   }
 }
 
-void handleSync() {
-  Serial.println("\n STATE: SYNC ");
-  setLED("blue");
-  
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.println("Syncing");
-  display.println("(BLE coming soon)");
-  display.display();
-  
-  delay(2000);
-  currState = MENU;
-}
-
 void handleIdle() {
   Serial.println("\n STATE: IDLE ");
   setLED("off");
@@ -380,7 +400,7 @@ void handleReadings() {
   display.println(" lux");
   
   display.println("");
-  display.println("Press SELECT to go back");
+  display.println("<-- Go back (SELECT)");
   display.display();
 
   while (currState == READINGS) {
@@ -392,8 +412,6 @@ void handleReadings() {
     }
     delay(100);
   }
-
-
 }
 
 
@@ -424,58 +442,6 @@ void handleError() {
     delay(100);
   }
 }
-
-//Data handling functions
-void loadMockPlants() {
-  Serial.println("Loading mock plant data");
-  
-  plants[0].name = "Snake Plant";
-  plants[0].min_temp = 60;
-  plants[0].max_temp = 85;
-  plants[0].min_humidity = 30;
-  plants[0].max_humidity = 50;
-  plants[0].sunlight = "low";
-  plants[0].score = 0;
-  
-  plants[1].name = "Pothos";
-  plants[1].min_temp = 65;
-  plants[1].max_temp = 80;
-  plants[1].min_humidity = 40;
-  plants[1].max_humidity = 60;
-  plants[1].sunlight = "medium";
-  plants[1].score = 0;
-  
-  plants[2].name = "Spider Plant";
-  plants[2].min_temp = 55;
-  plants[2].max_temp = 80;
-  plants[2].min_humidity = 40;
-  plants[2].max_humidity = 65;
-  plants[2].sunlight = "bright indirect";
-  plants[2].score = 0;
-  
-  plants[3].name = "Aloe Vera";
-  plants[3].min_temp = 55;
-  plants[3].max_temp = 80;
-  plants[3].min_humidity = 10;
-  plants[3].max_humidity = 30;
-  plants[3].sunlight = "bright direct";
-  plants[3].score = 0;
-  
-  plants[4].name = "Peace Lily";
-  plants[4].min_temp = 65;
-  plants[4].max_temp = 80;
-  plants[4].min_humidity = 50;
-  plants[4].max_humidity = 70;
-  plants[4].sunlight = "low";
-  plants[4].score = 0;
-  
-  plantCount = 5;
-  
-  Serial.print("Loaded ");
-  Serial.print(plantCount);
-  Serial.println(" mock plants");
-}
-
 
 int lightLevel(String s) {
   if (s == "low") return 0;
