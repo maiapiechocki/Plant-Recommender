@@ -830,6 +830,7 @@ void fetchPlants() {
           plants[plantCount].min_humidity = obj["min_humidity"] | 0;
           plants[plantCount].max_humidity = obj["max_humidity"] | 0;
           plants[plantCount].sunlight = obj["sunlight"] | "";
+          if(plants[plantCount].sunlight == "Bright Indirect") plants[plantCount].sunlight = "Bright Indir";
           plants[plantCount].score = 0;
           plantCount++;
         }
