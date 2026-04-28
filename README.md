@@ -1,3 +1,5 @@
+Demo Video: https://www.youtube.com/shorts/kFBCr6FUygI 
+
 The main .ino file requires you setup the arduino IDE correctly and download the proper libraries
 
 Open Board Manager (left side bar):
